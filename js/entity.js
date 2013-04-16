@@ -28,7 +28,7 @@ Entity.prototype.update = function(dt) {
 
     this.old_pos = this.pos;
     this.pos = this.update_function(dt, this);
-    this.velocity = distance(this.old_pos, this.pos) * dt;
+    this.velocity = mul2d(sub2d(this.pos, this.old_pos), 1/dt);
 
     this.sprite.update(dt);
     return true;

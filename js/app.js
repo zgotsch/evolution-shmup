@@ -82,6 +82,26 @@ function createBullet(pos) {
             bullet_update_func);
 }
 
+var up = {};
+var down = {};
+var backtime = 500;
+var accel = 1;
+function createMissile(direction, pos) {
+    var backvel = [-50, direction == up ? -50 : 50];
+    var forvel = [500, 0];
+    var foracc = [2000, 0];
+    var missile_update_func = function(dt, entity) {
+        var elapsed = Date.now() - entity.creation_time;
+        if(elapsed < backtime) {
+            return add2d(entity.pos, mul2d(backvel, dt));
+        }
+        return add2d(add2d(entity.pos, mul2d(entity.velocity, dt)),
+                     mul2d(foracc, Math.pow(dt, 2)));
+    }
+    return new Entity(pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
+            missile_update_func);
+}
+
 function createPlayer() {
     var FIRE_DELAY = 100;
     return new Entity([0, 0], new Sprite('resources/sprites.png', [0, 0],
@@ -104,9 +124,9 @@ function createPlayer() {
             if(input.isDown('SPACE') && !isGameOver && Date.now() - lastFire > FIRE_DELAY) {
                 bullet_position = getEntityCenter(player);
 
+                bullets.push(createMissile(up, bullet_position));
+                bullets.push(createMissile(down, bullet_position));
                 bullets.push(createBullet(bullet_position));
-                bullets.push(createBullet(add2d(bullet_position, [0, 5])));
-                bullets.push(createBullet(add2d(bullet_position, [0, -5])));
 
                 lastFire = Date.now();
             }
@@ -115,7 +135,23 @@ function createPlayer() {
     );
 }
 
-var once = true;
+function once(fn) {
+    var o = true;
+    var new_func = function() {
+        if(o) {
+            o = false;
+            return fn.apply(this, arguments);
+        }
+        return null;
+    }
+    return new_func;
+}
+
+var createAndAddEnemy = function() {
+    enemies.push(createEnemy([canvas.width, Math.random() * (canvas.height - 39)]));
+}
+//createAndAddEnemy = once(createAndAddEnemy);
+
 function update(dt) {
     gameTime += dt;
 
@@ -123,9 +159,8 @@ function update(dt) {
 
     checkCollisions();
 
-    if(once && Math.random() < 1 - Math.pow(.993, gameTime)) {
-        enemies.push(createEnemy([canvas.width, Math.random() * (canvas.height - 39)]));
-        once = false;
+    if(Math.random() < 1 - Math.pow(.993, gameTime)) {
+        createAndAddEnemy();
     }
 
     scoreEl.innerHTML = score;
