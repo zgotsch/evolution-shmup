@@ -81,6 +81,13 @@ function createBullet(pos) {
     return new Entity(pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
             bullet_update_func);
 }
+function createFastBullet(pos) {
+    var bullet_update_func = function(dt, entity) {
+        return add2d(entity.pos, mul2d([100000, 0], dt));
+    }
+    return new Entity(pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
+            bullet_update_func);
+}
 
 var up = {};
 var down = {};
@@ -124,9 +131,9 @@ function createPlayer() {
             if(input.isDown('SPACE') && !isGameOver && Date.now() - lastFire > FIRE_DELAY) {
                 bullet_position = getEntityCenter(player);
 
-                bullets.push(createMissile(up, bullet_position));
-                bullets.push(createMissile(down, bullet_position));
-                bullets.push(createBullet(bullet_position));
+                //bullets.push(createMissile(up, bullet_position));
+                //bullets.push(createMissile(down, bullet_position));
+                bullets.push(createFastBullet(bullet_position));
 
                 lastFire = Date.now();
             }
@@ -198,8 +205,36 @@ function updateEntities(dt) {
     }
 }
 
+function entityBorders(entity) {
+    var borders = [];
+    borders.push([entity.pos, add2d(entity.pos, [entity.sprite.size[0], 0])]); //top
+    borders.push([entity.pos, add2d(entity.pos, [0, entity.sprite.size[1]])]); //left
+    borders.push([add2d(entity.pos, [entity.sprite.size[0], 0]),
+                  add2d(entity.pos, entity.sprite.size)]); //right
+    borders.push([add2d(entity.pos, [0, entity.sprite.size[1]]),
+                  add2d(entity.pos, entity.sprite.size)]); //bottom
+    return borders;
+}
 function bulletCollides(bullet, other) {
     // returns collision point or false
+    var bulletSegment = [bullet.old_pos, bullet.pos];
+    var closest = {point:null, distance:Infinity}
+    var borders = entityBorders(other);
+    for(var i = 0; i < borders.length; i++) {
+        var collision_point = segmentIntersection(bulletSegment, borders[i]);
+        if(collision_point) {
+            var dist = distance(bullet.old_pos, collision_point);
+            if(dist < closest.distance) {
+                closest.distance = dist;
+                closest.point = collision_point;
+            }
+        }
+    }
+    if(closest.point) {
+        return closest.point;
+    } else {
+        return false;
+    }
 }
 
 function collides(x, y, r, b, x2, y2, r2, b2) {
@@ -226,14 +261,15 @@ function checkCollisions() {
         for(var j = 0; j < bullets.length; j++) {
             var bullet = bullets[j];
 
-            if(entityCollides(bullet, enemy)) {
+            var collisionPoint = bulletCollides(bullet, enemy);
+            if(collisionPoint) {
                 enemies.splice(i, 1);
                 i--;
 
                 score += 100;
 
                 explosions.push({
-                    pos: bullet.pos,
+                    pos: collisionPoint,
                     sprite: new Sprite('resources/sprites.png',
                                        [0, 117], [39, 39], 16,
                                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],

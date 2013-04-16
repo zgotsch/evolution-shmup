@@ -22,16 +22,21 @@ function crossProductMagnitude(a, b) {
     return a[0] * b[1] - a[1] * b[0];
 }
 
-function segmentIntersection(start_a, end_a, start_b, end_b) {
+function segmentIntersection(seg_a, seg_b) {
     // returns null if no intersection
     // otherwise returns a point
+
+    var start_a = seg_a[0];
+    var end_a = seg_a[1];
+    var start_b = seg_b[0];
+    var end_b = seg_b[1];
 
     //renamed variables to match http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 
     var p = start_a;
     var q = start_b;
-    var s = sub2d(end_b - start_b);
-    var r = sub2d(end_a - start_a);
+    var s = sub2d(end_b, start_b);
+    var r = sub2d(end_a, start_a);
 
     var denom = crossProductMagnitude(r, s);
     var q_minus_p = sub2d(q, p);
