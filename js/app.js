@@ -59,10 +59,112 @@ var terrainPattern;
 var score = 0;
 var scoreEl = document.getElementById('score');
 
+// Tradeoffs are made between armor, engine speed, weapons
+// Things to encode:
+//     Light, Medium, Heavy
+//         Light ships come in 3s, fly quickly and erratically (in formation?)
+//         Medium ships come in 2s, balance between light and heavy
+//         Heavy ships come by themselves, have high hull and slow speed
+//     Flight behaiviour?
+//     Weapon strength and type
+//     Armor strength and type
+//     
+
+// 4 weapon types, designed to be obviously visually distinguishable.
+//     Explosive - impacts cause small explosions. Explosive damage that kills an enemy triggers an explosion
+//     Impact - fast moving, nonexplosive. Trigger ship breakup on kill
+//     Freeze?
+//     Heat/melt?lazors?? (Energy?)
+//
+// Weapon types:
+//     Missiles
+//     Lasers
+//     Point defense
+//     Flechette/slugs
+//     Spray stuff (Flamethrowers, etc)
+//
+// Armor types:
+//     Armor
+//     Shield
+
+function Chromosome(shipType, weapons, armor, behaviour) {
+    this.shipType = shipType;
+    this.weapons = weapons;
+    this.armor = armor;
+    this.behaviour = behaviour;
+}
+
+function createShipEntityFromChromosome(chromosome) {
+    return createEnemy([0, 0]);
+}
+
+function randomInt(min, max) {
+    if(typeof(max) === 'undefined') {
+        max = min;
+        min = 0;
+    }
+    return min + Math.floor(Math.random() * max);
+}
+
+function randomIndex(list) {
+    return randomInt(list.length);
+}
+
+var chromosome_count = 10;
+var chromosome_pool = [];
+var entities_to_entity_sets = {}
+var live_chromosomes = {}; // Entity sets to chromosomes?
+var dead_chromosomes = {}; // Priority queue. Priorities are fitnesses.
+function getNewChromosome() {
+    // when we don't have any chromosomes left in the pool
+    if(chromosome_pool.length == 0) {
+        if(dead_chromosomes.length != 0) {
+            // we make a new generation
+            //     For 10, take top 4, do crossover between them to get 6.
+            //     Then make 4 more randomly
+            crossover_count = 4;
+            crossover_list = [];
+            for(var i = 0; i < crossover_count; i++) {
+                crossover_list.push(dead_chromosomes.max());
+            }
+            for(var i = 0; i < crossover_list.count; i++) {
+                for(var j = i; j < crossover_list.count; j++) {
+                    chromosome_pool.push(mutate(crossover(crossover_list[i], crossover_list[j])));
+                }
+            }
+        }
+        for(var i = chromosome_pool.count; i < chromosome_count; i++) {
+            chromosome_pool.push(createRandomChromosome());
+        }
+    }
+    // pick a random chromosome in the chromosome_pool and remove it from pool
+    return chromosome_pool.splice(randomIndex(chromosome_pool), 1);
+}
+
+function crossover(chromo1, chromo2) {
+    return new Chromosome(
+        randomInt(1) ? chromo1.shipType : chromo2.shipType,
+        randomInt(1) ? chromo1.weapons : chromo2.weapons,
+        randomInt(1) ? chromo1.armor : chromo2.weapons,
+        randomInt(1) ? chromo1.behaviour : chromo2.behaviour
+    );
+}
+
+function mutate(chromosome) {
+    return new Chromosome(
+        mutateShipType(chromosome.shipType),
+        mutateWeapons(chromosome.weapons),
+        mutateArmor(chromosome.armor),
+        mutateBehavious(chromosome.behaviour)
+    );
+}
+
 function Entity(pos, sprite, update_function) {
     this.pos = pos;
     this.sprite = sprite;
     this.update_function = update_function;
+
+    this.creation_time = Date.now()
 }
 Entity.prototype.update = function(dt) {
     //returns false if the entity is offscreen, else returns turn
@@ -90,6 +192,13 @@ function createEnemy(pos) {
                                       enemy_update_func
             );
 }
+function createBullet(pos) {
+    var bullet_update_func = function(dt, old_pos) {
+        return add2d(old_pos, mul2d([bulletSpeed, 0], dt));
+    }
+    return new Entity(pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
+            bullet_update_func);
+}
 
 function createPlayer() {
     var FIRE_DELAY = 100;
@@ -113,15 +222,9 @@ function createPlayer() {
             if(input.isDown('SPACE') && !isGameOver && Date.now() - lastFire > FIRE_DELAY) {
                 bullet_position = getEntityCenter(player);
 
-                bullets.push({ pos: bullet_position,
-                               dir: 'forward',
-                               sprite: new Sprite('resources/sprites.png', [0, 39], [18, 8]) });
-                bullets.push({ pos: add2d(bullet_position, [0, -5]),
-                               dir: 'forward',
-                               sprite: new Sprite('resources/sprites.png', [0, 39], [18, 8]) });
-                bullets.push({ pos: add2d(bullet_position, [0, 5]),
-                               dir: 'forward',
-                               sprite: new Sprite('resources/sprites.png', [0, 39], [18, 8]) });
+                bullets.push(createBullet(bullet_position));
+                bullets.push(createBullet(add2d(bullet_position, [0, 5])));
+                bullets.push(createBullet(add2d(bullet_position, [0, -5])));
 
                 lastFire = Date.now();
             }
@@ -212,6 +315,49 @@ function updateEntities(dt) {
     }
 }
 
+function crossProductMagnitude(a, b) {
+    return a[0] * b[1] - a[1] * b[0];
+}
+
+function segmentIntersection(start_a, end_a, start_b, end_b) {
+    // returns null if no intersection
+    // otherwise returns a point
+
+    //renamed variables to match http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+
+    var p = start_a;
+    var q = start_b;
+    var s = sub2d(end_b - start_b);
+    var r = sub2d(end_a - start_a);
+
+    var denom = crossProductMagnitude(r, s);
+    var q_minus_p = sub2d(q, p);
+
+    if(denom == 0) {
+        // lines are parallel
+        if(crossProductMagnitude(q_minus_p, r) == 0) {
+            // lines are colinear
+            return q;
+        } else {
+            return null;
+        }
+    }
+
+    var t = crossProductMagnitude(q_minus_p, s) / denom;
+    var u = crossProductMagnitude(q_minus_p, r) / denom;
+
+    if(t >= 0 && t <= 1 &&
+       u >= 0 && u <= 1) {
+           return add2d(p, mul2d(r, t));
+    } else {
+        return null;
+    }
+}
+
+function bulletCollides(bullet, other) {
+    // returns collision point or false
+}
+
 function collides(x, y, r, b, x2, y2, r2, b2) {
     return !(r <= x2 || x > r2 || b <= y2 || y > b2);
 }
@@ -228,7 +374,7 @@ function entityCollides(e1, e2) {
 }
 
 function checkCollisions() {
-    checkPlayerBounds();
+    enforcePlayerBounds();
 
     // Check enemy collisions and bullets
     for(var i = 0; i < enemies.length; i++) {
@@ -261,7 +407,7 @@ function checkCollisions() {
     }
 }
 
-function checkPlayerBounds() {
+function enforcePlayerBounds() {
     if(player.pos[0] < 0) {
         player.pos[0] = 0;
     } else if(player.pos[0] > canvas.width - player.sprite.size[0]) {
