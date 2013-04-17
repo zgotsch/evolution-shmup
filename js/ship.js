@@ -53,7 +53,7 @@ function tempCreateExplosion(pos) {
                            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                            null, true)
     };
-    entityPool.push(explosion);
+    renderer.addEntity(explosion);
     explosions.push(explosion);
 }
 
@@ -96,7 +96,7 @@ Weapon.prototype.fire = function() {
             var bullet = new Entity(cannonLocation, this.projectileSprite, this.projectileUpdateFunction);
             bullet.weapon = this;
             bullets.push(bullet);
-            entityPool.push(bullet);
+            renderer.addEntity(bullet);
 
             //debug("Fired: ", this);
         }

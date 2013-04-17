@@ -6,6 +6,56 @@ canvas.width = 512;
 canvas.height = 480;
 document.body.appendChild(canvas);
 
+function Engine() {
+    this.running = false;
+    this.canvas = canvas;
+    this.ctx = ctx;
+
+    this.renderer = new Renderer();
+
+    this.enemies = [];
+    this.player = createPlayer();
+}
+
+function Renderer(canvas, ctx) {
+    var entities = [];
+
+    function removeInactiveEntities() {
+        entities = entities.filter(function(e) {
+            return !e.remove && !e.sprite.done;
+        });
+    }
+
+    function renderEntities(entities) {
+        entities.forEach(renderEntity);
+    }
+
+    function renderEntity(entity) {
+        ctx.save();
+        ctx.translate(entity.pos[0], entity.pos[1]);
+        entity.sprite.render(ctx);
+        ctx.restore();
+    }
+
+    function renderBackground() {
+        ctx.fillStyle = terrainPattern;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    this.render = function() {
+        renderBackground();
+
+        removeInactiveEntities();
+        renderEntities(entities);
+    }
+
+    this.addEntity = function(entity) {
+        entities.push(entity);
+    }
+}
+
+var renderer = new Renderer(canvas, ctx);
+
 var playerSpeed = 200;
 var bulletSpeed = 500;
 var enemySpeed = 50;
@@ -16,7 +66,7 @@ function gameLoop() {
     var dt = (now - lastTime) / 1000.0;
 
     update(dt);
-    render();
+    renderer.render();
 
     lastTime = now;
     requestAnimationFrame(gameLoop);
@@ -42,8 +92,6 @@ function init() {
 }
 
 // Game state
-var entityPool = [];
-
 var player = createPlayer();
 var playerEntity;
 
@@ -83,7 +131,7 @@ function createEnemy(pos) {
             );
     */
     var enemy = new Enemy(pos);
-    entityPool.push(enemy.ship.entity);
+    renderer.addEntity(enemy.ship.entity);
     return enemy;
 }
 function createBullet(pos) {
@@ -168,7 +216,7 @@ function createPlayer() {
             return new_pos;
         }
     );
-    entityPool.push(playerEntity);
+    renderer.addEntity(playerEntity);
     playerShip = new Ship(playerEntity);
     playerShip.addWeaponAtIndex(new MachineGun(), 0);
     playerShip.addWeaponAtIndex(new MachineGun(), 1);
@@ -399,38 +447,6 @@ function boundEntityWithin(entity, bounds_low, bounds_high) {
     } else if(entity.pos[1] + entity.sprite.size[1] > bounds_high[1]) {
         entity.pos[1] = bounds_high[1] - entity.sprite.size[1];
     }
-}
-
-function render() {
-    ctx.fillStyle = terrainPattern;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    entityPool = entityPool.filter(function(entity) {
-        return !entity.remove && !entity.sprite.done;
-    });
-    renderEntities(entityPool);
-
-    /*
-    // Render the player if the game isn't over
-    if(!isGameOver) {
-        renderEntity(playerEntity);
-    }
-
-    renderEntities(bullets);
-    renderEntities(enemies);
-    renderEntities(explosions);
-    */
-}
-
-function renderEntities(entities) {
-    entities.forEach(renderEntity);
-}
-
-function renderEntity(entity) {
-    ctx.save();
-    ctx.translate(entity.pos[0], entity.pos[1]);
-    entity.sprite.render(ctx);
-    ctx.restore();
 }
 
 function gameOver() {
