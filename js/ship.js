@@ -30,20 +30,25 @@ Ship.prototype.damage = function(damage) {
     }
 };
 
-function Enemy(pos) {
-    var enemy_update_func = function(dt, entity) {
-        //new_pos = add2d(old_pos, mul2d(enemySpeed, dt));
-        direction_to_player = normalize(sub2d(playerEntity.pos, entity.pos));
-        new_pos = add2d(entity.pos, mul2d(direction_to_player, enemySpeed * dt));
-        return new_pos;
-    }
+function goStraightBehaviour(dt, ship) {
+    ship.entity.pos = add2d(ship.entity.pos, [-enemySpeed * dt, 0]);
+}
+function followPlayerBehaviour(dt, ship) {
+    var direction_to_player = normalize(sub2d(engine.player.ship.entity.pos, ship.entity.pos));
+    new_pos = add2d(ship.entity.pos, mul2d(direction_to_player, enemySpeed * dt));
+    ship.entity.pos = new_pos;
+}
+function Enemy(pos, behaviour) {
     var shipEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 78],
-                                [80, 39], 6, [0, 1, 2, 3, 2, 1]),
-                                enemy_update_func
-                               );
+                                [80, 39], 6, [0, 1, 2, 3, 2, 1]));
     this.ship = new Ship(shipEntity, 200);
+    this.behaviour = behaviour;
+
     debug("Enemy created at:" + pos);
 }
+Enemy.prototype.update = function(dt) {
+    this.behaviour(dt, this.ship);
+};
 
 function tempCreateExplosion(pos) {
     var explosion = {
@@ -53,17 +58,17 @@ function tempCreateExplosion(pos) {
                            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                            null, true)
     };
-    renderer.addEntity(explosion);
-    explosions.push(explosion);
+    engine.renderer.addEntity(explosion);
+    //engine.explosions.push(explosion);
 }
 
 
 function weaponIndexToYCoord(index) {
-    return index * 20;
+    return 5 + index * 20;
 }
 function weaponFireLocation(ship, index) {
-    var entityCenter = getEntityCenter(ship.entity);
-    return add2d(entityCenter, [0, weaponIndexToYCoord(index)]);
+    //var entityCenter = getEntityCenter(ship.entity);
+    return add2d(ship.entity.pos, [0, weaponIndexToYCoord(index)]);
 }
 
 function Weapon(name, damage, fireDelay) {
@@ -93,11 +98,7 @@ Weapon.prototype.fire = function() {
         } else {
             // All good
             var cannonLocation = weaponFireLocation(this.ship, this.index);
-            var bullet = new Entity(cannonLocation, this.projectileSprite, this.projectileUpdateFunction);
-            bullet.weapon = this;
-            bullets.push(bullet);
-            renderer.addEntity(bullet);
-
+            var bullet = new Projectile(cannonLocation, this.projectileSprite, this.projectileUpdateFunction, this);
             //debug("Fired: ", this);
         }
     }
@@ -109,11 +110,38 @@ Weapon.prototype.attach = function(ship) {
 var machineGunProjectileUpdateFunction = function(dt, entity) {
     return add2d(entity.pos, mul2d([bulletSpeed, 0], dt));
 }
+var machineGunProjectileHitFunction = function(hitLocation) {
+    tempCreateExplosion(hitLocation);
+}
+
 function MachineGun() {
     Weapon.call(this, "MachineGun", {amount: 100, type: "physical"}, 100);
 
     this.projectileSprite = new Sprite('resources/sprites.png', [0, 39], [18, 8]);
     this.projectileUpdateFunction = machineGunProjectileUpdateFunction;
+    this.projectileExplosionFunction = machineGunProjectileHitFunction;
 }
 MachineGun.prototype = object(Weapon.prototype);
 MachineGun.prototype.constructor = MachineGun;
+
+
+function Projectile(pos, sprite, updateFunction, weapon) {
+    this.updateFunction = updateFunction;
+    this.weapon = weapon;
+
+    this.entity = new Entity(pos, sprite);
+    engine.playerBullets.push(this);
+    engine.renderer.addEntity(this.entity);
+}
+Projectile.prototype.update = function(dt) {
+    //returns false if the entity is offscreen, else returns turn
+    if(isEntityOffscreen(this.entity)) {
+        this.entity.remove = true;
+        return false;
+    }
+
+    this.entity.old_pos = this.entity.pos;
+    this.entity.pos = this.updateFunction(dt, this.entity);
+    this.velocity = mul2d(sub2d(this.entity.pos, this.entity.old_pos), 1/dt);
+    return true;
+};

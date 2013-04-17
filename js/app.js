@@ -6,15 +6,157 @@ canvas.width = 512;
 canvas.height = 480;
 document.body.appendChild(canvas);
 
+var scoreEl = document.getElementById('score');
+var framerateEl = document.getElementById('framerate');
+
+
+var terrainPattern;
+document.getElementById('play-again').addEventListener('click', function() {
+    engine.reset();
+});
+
+function showGameOverOverlay() {
+    document.getElementById('game-over').style.display = 'block';
+    document.getElementById('game-over-overlay').style.display = 'block';
+}
+function hideGameOverOverlay() {
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('game-over-overlay').style.display = 'none';
+}
+
+var engine = new Engine();
+
+resources.onReady(function() {
+    terrainPattern = ctx.createPattern(resources.get('resources/terrain.png'), 'repeat');
+    engine.start.call(engine);
+});
+resources.load([
+        'resources/sprites.png',
+        'resources/terrain.png',
+        'resources/laser.png'
+        ]);
+
 function Engine() {
+    var self = this;
+
     this.running = false;
-    this.canvas = canvas;
-    this.ctx = ctx;
 
-    this.renderer = new Renderer();
+    this.renderer = new Renderer(canvas, ctx);
 
-    this.enemies = [];
-    this.player = createPlayer();
+    var framerate = DEBUG;
+
+    var lastTime;
+
+    this.reset = function() {
+        self.renderer.reset();
+
+        hideGameOverOverlay();
+        self.gameTime = 0;
+        self.score = 0;
+
+        self.enemies = [];
+        self.player = createPlayer([50, canvas.height / 2], this.renderer);
+        self.playerBullets = [];
+        self.enemyBullets = [];
+    }
+
+    this.reset();
+
+    this.start = function() {
+        self.running = true;
+        lastTime = Date.now();
+        self.gameLoop();
+    }
+    this.pause = function() {
+        self.running = false;
+    }
+
+    this.gameLoop = function() {
+        var now = Date.now();
+        var dt = (now - lastTime) / 1000.0;
+
+        update(dt);
+        self.renderer.render(dt);
+
+        lastTime = now;
+        if(self.running) {
+            requestAnimationFrame(self.gameLoop);
+        }
+    }
+
+    var frameRates = [];
+    function showFrameRate(dt) {
+        frameRates.push(1/dt);
+        while(frameRates.length > 10) {
+            frameRates.shift();
+        }
+        framerateEl.innerHTML = average(frameRates).toFixed(1);
+    }
+    function update(dt) {
+        self.gameTime += dt;
+
+        self.player.update(dt);
+        self.enemies.forEach(function(e) { e.update(dt); });
+        //self.playerBullets.forEach(function(pb) { pb.update(dt); });
+        for(var i = 0; i < self.playerBullets.length; i++) {
+            if(!self.playerBullets[i].update(dt)) {
+                self.playerBullets.splice(i, 1);
+                i--;
+            }
+        }
+        //self.enemyBullets.forEach(function(eb) { eb.update(dt); });
+
+        checkCollisions();
+
+        if(Math.random() < 1 - Math.pow(.993, self.gameTime)) {
+            createAndAddEnemy();
+        }
+
+        scoreEl.innerHTML = self.score;
+        if(framerate) { showFrameRate(dt); }
+    }
+
+    function checkCollisions() {
+        enforcePlayerBounds();
+
+        // Check enemy collisions and bullets
+        for(var i = 0; i < self.enemies.length; i++) {
+            var enemy = self.enemies[i];
+            for(var j = 0; j < self.playerBullets.length; j++) {
+                var bullet = self.playerBullets[j];
+
+                var collisionPoint = bulletCollides(bullet, enemy.ship.entity);
+                if(collisionPoint) {
+                    if(bullet.weapon.projectileExplosionFunction) {
+                        bullet.weapon.projectileExplosionFunction(collisionPoint);
+                    }
+                    var destroyed = enemy.ship.damage(bullet.weapon.damage);
+
+                    if(destroyed) {
+                        enemy.ship.entity.remove = true;
+                        self.enemies.splice(i, 1);
+                        i--;
+
+                        self.score += 100;
+
+                    }
+                    bullet.entity.remove = true;
+                    self.playerBullets.splice(j, 1);
+                    break;
+                }
+            }
+
+            if(entityCollides(enemy.ship.entity, self.player.ship.entity)) {
+                gameOver();
+            }
+        }
+    }
+
+    var createAndAddEnemy = function() {
+        var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)])
+        self.enemies.push(enemy);
+    }
+    //createAndAddEnemy = once(createAndAddEnemy);
 }
 
 function Renderer(canvas, ctx) {
@@ -23,6 +165,12 @@ function Renderer(canvas, ctx) {
     function removeInactiveEntities() {
         entities = entities.filter(function(e) {
             return !e.remove && !e.sprite.done;
+        });
+    }
+
+    function updateSprites(dt) {
+        entities.forEach(function (entity) {
+            entity.sprite.update(dt);
         });
     }
 
@@ -42,9 +190,10 @@ function Renderer(canvas, ctx) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    this.render = function() {
+    this.render = function(dt) {
         renderBackground();
 
+        updateSprites(dt);
         removeInactiveEntities();
         renderEntities(entities);
     }
@@ -52,67 +201,14 @@ function Renderer(canvas, ctx) {
     this.addEntity = function(entity) {
         entities.push(entity);
     }
+
+    this.reset = function() {
+        entities.length = 0;
+    }
 }
 
-var renderer = new Renderer(canvas, ctx);
-
-var playerSpeed = 200;
 var bulletSpeed = 500;
 var enemySpeed = 50;
-
-var lastTime;
-function gameLoop() {
-    var now = Date.now();
-    var dt = (now - lastTime) / 1000.0;
-
-    update(dt);
-    renderer.render();
-
-    lastTime = now;
-    requestAnimationFrame(gameLoop);
-}
-
-resources.onReady(init);
-resources.load([
-        'resources/sprites.png',
-        'resources/terrain.png',
-        'resources/laser.png'
-        ]);
-
-function init() {
-    terrainPattern = ctx.createPattern(resources.get('resources/terrain.png'), 'repeat');
-
-    document.getElementById('play-again').addEventListener('click', function() {
-        reset();
-    });
-
-    reset();
-    lastTime = Date.now();
-    gameLoop(); //start the game loop
-}
-
-// Game state
-var player = createPlayer();
-var playerEntity;
-
-var bullets = [];
-var enemies = [];
-var explosions = [];
-
-var lastFire = Date.now();
-var gameTime;
-var isGameOver;
-var terrainPattern;
-
-// The score
-var score = 0;
-var scoreEl = document.getElementById('score');
-var framerateEl = document.getElementById('framerate');
-
-
-var isEmpty = function(obj) {
-    return Object.keys(obj).length === 0;
-}
 
 function createEnemy(pos) {
     /*
@@ -130,8 +226,9 @@ function createEnemy(pos) {
                                       enemy_update_func
             );
     */
-    var enemy = new Enemy(pos);
-    renderer.addEntity(enemy.ship.entity);
+    var behaviour = randomInt(1) ? goStraightBehaviour : followPlayerBehaviour;
+    var enemy = new Enemy(pos, behaviour);
+    engine.renderer.addEntity(enemy.ship.entity);
     return enemy;
 }
 function createBullet(pos) {
@@ -191,110 +288,40 @@ function createMissile(direction, pos) {
             missile_update_func);
 }
 
-function createPlayer() {
+function createPlayer(pos, renderer) {
     var playerShip;
-    playerEntity = new Entity([0, 0], new Sprite('resources/sprites.png', [0, 0],
-                                         [39, 39], 16, [0, 1]),
-        function(dt, entity) {
-            new_pos = entity.pos;
-            if(input.isDown('DOWN') || input.isDown('s')) {
-                new_pos[1] += playerSpeed * dt;
-            }
-            if(input.isDown('UP') || input.isDown('w')) {
-                new_pos[1] -= playerSpeed * dt;
-            }
-            if(input.isDown('LEFT') || input.isDown('a')) {
-                new_pos[0] -= playerSpeed * dt;
-            }
-            if(input.isDown('RIGHT') || input.isDown('d')) {
-                new_pos[0] += playerSpeed * dt;
-            }
+    playerEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 0],
+                                         [39, 39], 16, [0, 1]));
 
-            if(input.isDown('SPACE') && !isGameOver) {
-                playerShip.fireAllWeapons();
-            }
-            return new_pos;
-        }
-    );
     renderer.addEntity(playerEntity);
     playerShip = new Ship(playerEntity);
     playerShip.addWeaponAtIndex(new MachineGun(), 0);
     playerShip.addWeaponAtIndex(new MachineGun(), 1);
 
-    return playerShip;
-    /*
-    return new Entity([0, 0], new Sprite('resources/sprites.png', [0, 0],
-                                         [39, 39], 16, [0, 1]),
-        function(dt, entity) {
-            new_pos = entity.pos;
-            if(input.isDown('DOWN') || input.isDown('s')) {
-                new_pos[1] += playerSpeed * dt;
-            }
-            if(input.isDown('UP') || input.isDown('w')) {
-                new_pos[1] -= playerSpeed * dt;
-            }
-            if(input.isDown('LEFT') || input.isDown('a')) {
-                new_pos[0] -= playerSpeed * dt;
-            }
-            if(input.isDown('RIGHT') || input.isDown('d')) {
-                new_pos[0] += playerSpeed * dt;
-            }
-
-            if(input.isDown('SPACE') && !isGameOver && Date.now() - lastFire > FIRE_DELAY) {
-                bullet_position = getEntityCenter(player);
-
-                bullets.push(createMissile(up, bullet_position));
-                bullets.push(createMissile(down, bullet_position));
-                bullets.push(createLaser(bullet_position));
-
-                lastFire = Date.now();
-            }
-            return new_pos;
+    return {ship: playerShip, update: function(dt) {
+        var playerSpeed = 200;
+        new_pos = this.ship.entity.pos;
+        if(input.isDown('DOWN') || input.isDown('s')) {
+            new_pos[1] += playerSpeed * dt;
         }
-    );
-    */
-}
-
-function once(fn) {
-    var o = true;
-    var new_func = function() {
-        if(o) {
-            o = false;
-            return fn.apply(this, arguments);
+        if(input.isDown('UP') || input.isDown('w')) {
+            new_pos[1] -= playerSpeed * dt;
         }
-        return null;
-    }
-    return new_func;
+        if(input.isDown('LEFT') || input.isDown('a')) {
+            new_pos[0] -= playerSpeed * dt;
+        }
+        if(input.isDown('RIGHT') || input.isDown('d')) {
+            new_pos[0] += playerSpeed * dt;
+        }
+
+        if(input.isDown('SPACE')) {
+            playerShip.fireAllWeapons();
+        }
+        this.ship.entity.pos = new_pos;
+    }};
 }
 
-var createAndAddEnemy = function() {
-    var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)]);
-    enemies.push(enemy);
-}
-//createAndAddEnemy = once(createAndAddEnemy);
 
-var frameRates = [];
-function showFrameRate(dt) {
-    frameRates.push(1/dt);
-    while(frameRates.length > 10) {
-        frameRates.shift();
-    }
-    framerateEl.innerHTML = average(frameRates).toFixed(1);
-}
-function update(dt) {
-    gameTime += dt;
-
-    updateEntities(dt);
-
-    checkCollisions();
-
-    if(Math.random() < 1 - Math.pow(.993, gameTime)) {
-        createAndAddEnemy();
-    }
-
-    scoreEl.innerHTML = score;
-    showFrameRate(dt);
-}
 
 function updateEntities(dt) {
     playerEntity.update(dt);
@@ -340,13 +367,13 @@ function entityBorders(entity) {
 }
 function bulletCollides(bullet, other) {
     // returns collision point or false
-    var bulletSegment = [bullet.old_pos, bullet.pos];
+    var bulletSegment = [bullet.entity.old_pos, bullet.entity.pos];
     var closest = {point:null, distance:Infinity}
     var borders = entityBorders(other);
     for(var i = 0; i < borders.length; i++) {
         var collision_point = segmentIntersection(bulletSegment, borders[i]);
         if(collision_point) {
-            var dist = distance(bullet.old_pos, collision_point);
+            var dist = distance(bullet.entity.old_pos, collision_point);
             if(dist < closest.distance) {
                 closest.distance = dist;
                 closest.point = collision_point;
@@ -385,52 +412,6 @@ function createExplosion(pos) {
     });
 }
 
-function checkCollisions() {
-    enforcePlayerBounds();
-
-    // Check enemy collisions and bullets
-    for(var i = 0; i < enemies.length; i++) {
-        var enemy = enemies[i];
-        for(var j = 0; j < bullets.length; j++) {
-            var bullet = bullets[j];
-
-            var collisionPoint = bulletCollides(bullet, enemy.ship.entity);
-            if(collisionPoint) {
-                if(bullet.hasOwnProperty('hit_function')) {
-                    bullet.hit_function(collisionPoint, enemy.ship.entity);
-                }
-                else if(bullet.hasOwnProperty('weapon')) {
-                    var destroyed = enemy.ship.damage(bullet.weapon.damage);
-                    if(destroyed) {
-                        enemy.ship.entity.remove = true;
-                        enemies.splice(i, 1);
-                        i--;
-
-                        score += 100;
-
-                    }
-                    bullet.remove = true;
-                    bullets.splice(j, 1);
-                    break;
-                } else {
-                    enemies.splice(i, 1);
-                    i--;
-
-                    score += 100;
-
-                    //createExplosion(collisionPoint);
-
-                    bullets.splice(j, 1);
-                }
-                break;
-            }
-        }
-
-        if(entityCollides(enemy.ship.entity, playerEntity)) {
-            gameOver();
-        }
-    }
-}
 
 function enforcePlayerBounds() {
     boundEntityWithin(playerEntity, [0, 0], [canvas.width, canvas.height]);
@@ -455,15 +436,3 @@ function gameOver() {
     isGameOver = true;
 }
 
-function reset() {
-    document.getElementById('game-over').style.display = 'none';
-    document.getElementById('game-over-overlay').style.display = 'none';
-    isGameOver = false;
-    gameTime = 0;
-    score = 0;
-
-    enemies = [];
-    bullets = [];
-
-    playerEntity.pos = [50, canvas.height / 2];
-}
