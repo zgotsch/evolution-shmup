@@ -33,6 +33,13 @@ canvas {
     font-size: 2em;
 }
 
+#framerate {
+    float: right;
+    color: white;
+    font-size: 2em;
+    margin-right: 100px;
+}
+
 .key {
     color: #aaffdd;
 }

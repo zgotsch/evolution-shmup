@@ -57,6 +57,7 @@ var terrainPattern;
 // The score
 var score = 0;
 var scoreEl = document.getElementById('score');
+var framerateEl = document.getElementById('framerate');
 
 
 var isEmpty = function(obj) {
@@ -215,6 +216,14 @@ var createAndAddEnemy = function() {
 }
 //createAndAddEnemy = once(createAndAddEnemy);
 
+var frameRates = [];
+function showFrameRate(dt) {
+    frameRates.push(1/dt);
+    while(frameRates.length > 10) {
+        frameRates.shift();
+    }
+    framerateEl.innerHTML = average(frameRates).toFixed(1);
+}
 function update(dt) {
     gameTime += dt;
 
@@ -227,6 +236,7 @@ function update(dt) {
     }
 
     scoreEl.innerHTML = score;
+    showFrameRate(dt);
 }
 
 function updateEntities(dt) {

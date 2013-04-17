@@ -10,6 +10,14 @@ function randomIndex(list) {
     return randomInt(list.length);
 }
 
+function average(list) {
+    var sum = 0;
+    for(var i = 0; i < list.length; i++) {
+        sum += list[i];
+    }
+    return sum / list.length;
+}
+
 function debug(message) {
     if(DEBUG) {
         console.log.apply(console, arguments);

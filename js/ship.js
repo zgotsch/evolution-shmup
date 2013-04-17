@@ -56,6 +56,7 @@ Weapon.prototype.fire = function() {
             // All good
             var cannonLocation = weaponFireLocation(this.ship, this.index);
             var bullet = new Entity(cannonLocation, this.projectileSprite, this.projectileUpdateFunction);
+            bullet.weapon = this;
             bullets.push(bullet);
 
             debug("Fired: ", this);
