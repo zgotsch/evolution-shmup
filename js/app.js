@@ -1,3 +1,5 @@
+var DEBUG = true;
+
 var canvas = document.createElement("canvas");
 var ctx = canvas.getContext("2d");
 canvas.width = 512;
@@ -41,6 +43,7 @@ function init() {
 
 // Game state
 var player = createPlayer();
+var playerEntity;
 
 var bullets = [];
 var enemies = [];
@@ -61,12 +64,12 @@ var isEmpty = function(obj) {
 }
 
 function createEnemy(pos) {
-    console.log("Enemy created at:" + pos);
+    debug("Enemy created at:" + pos);
     //var enemySpeed = [-50, -10];
     var enemySpeed = 50;
     var enemy_update_func = function(dt, entity) {
         //new_pos = add2d(old_pos, mul2d(enemySpeed, dt));
-        direction_to_player = normalize(sub2d(player.pos, entity.pos));
+        direction_to_player = normalize(sub2d(playerEntity.pos, entity.pos));
         new_pos = add2d(entity.pos, mul2d(direction_to_player, enemySpeed * dt));
         return new_pos;
     }
@@ -133,7 +136,36 @@ function createMissile(direction, pos) {
 }
 
 function createPlayer() {
-    var FIRE_DELAY = 100;
+    var playerShip;
+    playerEntity = new Entity([0, 0], new Sprite('resources/sprites.png', [0, 0],
+                                         [39, 39], 16, [0, 1]),
+        function(dt, entity) {
+            new_pos = entity.pos;
+            if(input.isDown('DOWN') || input.isDown('s')) {
+                new_pos[1] += playerSpeed * dt;
+            }
+            if(input.isDown('UP') || input.isDown('w')) {
+                new_pos[1] -= playerSpeed * dt;
+            }
+            if(input.isDown('LEFT') || input.isDown('a')) {
+                new_pos[0] -= playerSpeed * dt;
+            }
+            if(input.isDown('RIGHT') || input.isDown('d')) {
+                new_pos[0] += playerSpeed * dt;
+            }
+
+            if(input.isDown('SPACE') && !isGameOver) {
+                playerShip.fireAllWeapons();
+            }
+            return new_pos;
+        }
+    );
+    playerShip = new Ship(playerEntity);
+    playerShip.addWeaponAtIndex(new MachineGun(), 0);
+    playerShip.addWeaponAtIndex(new MachineGun(), 1);
+
+    return playerShip;
+    /*
     return new Entity([0, 0], new Sprite('resources/sprites.png', [0, 0],
                                          [39, 39], 16, [0, 1]),
         function(dt, entity) {
@@ -163,6 +195,7 @@ function createPlayer() {
             return new_pos;
         }
     );
+    */
 }
 
 function once(fn) {
@@ -197,7 +230,7 @@ function update(dt) {
 }
 
 function updateEntities(dt) {
-    player.update(dt);
+    playerEntity.update(dt);
 
     // Update bullets
     for(var i = 0; i < bullets.length; i++) {
@@ -311,17 +344,17 @@ function checkCollisions() {
             }
         }
 
-        if(entityCollides(enemy, player)) {
+        if(entityCollides(enemy, playerEntity)) {
             gameOver();
         }
     }
 }
 
 function enforcePlayerBounds() {
-    boundWithin(player, [0, 0], [canvas.width, canvas.height]);
+    boundEntityWithin(playerEntity, [0, 0], [canvas.width, canvas.height]);
 }
 
-function boundWithin(entity, bounds_low, bounds_high) {
+function boundEntityWithin(entity, bounds_low, bounds_high) {
     if(entity.pos[0] < bounds_low[0]) {
         entity.pos[0] = bounds_low[0];
     } else if(entity.pos[0] + entity.sprite.size[0] > bounds_high[0]) {
@@ -340,7 +373,7 @@ function render() {
 
     // Render the player if the game isn't over
     if(!isGameOver) {
-        renderEntity(player);
+        renderEntity(playerEntity);
     }
 
     renderEntities(bullets);
@@ -375,5 +408,5 @@ function reset() {
     enemies = [];
     bullets = [];
 
-    player.pos = [50, canvas.height / 2];
+    playerEntity.pos = [50, canvas.height / 2];
 }
