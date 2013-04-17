@@ -1,5 +1,6 @@
-function Ship(entity) {
+function Ship(entity, health) {
     this.entity = entity;
+    this.health = health;
     this.weapons = {};
 }
 Ship.prototype.addWeaponAtIndex = function(weapon, index) {
@@ -19,6 +20,43 @@ Ship.prototype.fireAllWeapons = function() {
         this.weapons[gun].fire();
     }
 };
+Ship.prototype.damage = function(damage) {
+    this.health -= damage.amount;
+    if(this.health <= 0) {
+        tempCreateExplosion(getEntityCenter(this.entity));
+        return true;
+    } else {
+        return false;
+    }
+};
+
+function Enemy(pos) {
+    var enemy_update_func = function(dt, entity) {
+        //new_pos = add2d(old_pos, mul2d(enemySpeed, dt));
+        direction_to_player = normalize(sub2d(playerEntity.pos, entity.pos));
+        new_pos = add2d(entity.pos, mul2d(direction_to_player, enemySpeed * dt));
+        return new_pos;
+    }
+    var shipEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 78],
+                                [80, 39], 6, [0, 1, 2, 3, 2, 1]),
+                                enemy_update_func
+                               );
+    this.ship = new Ship(shipEntity, 200);
+    debug("Enemy created at:" + pos);
+}
+
+function tempCreateExplosion(pos) {
+    var explosion = {
+        pos: pos,
+        sprite: new Sprite('resources/sprites.png',
+                           [0, 117], [39, 39], 16,
+                           [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                           null, true)
+    };
+    entityPool.push(explosion);
+    explosions.push(explosion);
+}
+
 
 function weaponIndexToYCoord(index) {
     return index * 20;
@@ -33,7 +71,7 @@ function Weapon(name, damage, fireDelay) {
 
     this.projectileSprite = null;
     this.projectileUpdateFunction = null;
-    this.projectileHitFunction = null;
+    this.projectileExplosionFunction = null;
     this.damage = damage;
     this.fireDelay = fireDelay;
 
@@ -58,8 +96,9 @@ Weapon.prototype.fire = function() {
             var bullet = new Entity(cannonLocation, this.projectileSprite, this.projectileUpdateFunction);
             bullet.weapon = this;
             bullets.push(bullet);
+            entityPool.push(bullet);
 
-            debug("Fired: ", this);
+            //debug("Fired: ", this);
         }
     }
 };
@@ -71,7 +110,7 @@ var machineGunProjectileUpdateFunction = function(dt, entity) {
     return add2d(entity.pos, mul2d([bulletSpeed, 0], dt));
 }
 function MachineGun() {
-    Weapon.call(this, "MachineGun", 100, 100);
+    Weapon.call(this, "MachineGun", {amount: 100, type: "physical"}, 100);
 
     this.projectileSprite = new Sprite('resources/sprites.png', [0, 39], [18, 8]);
     this.projectileUpdateFunction = machineGunProjectileUpdateFunction;

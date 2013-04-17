@@ -42,6 +42,8 @@ function init() {
 }
 
 // Game state
+var entityPool = [];
+
 var player = createPlayer();
 var playerEntity;
 
@@ -65,6 +67,7 @@ var isEmpty = function(obj) {
 }
 
 function createEnemy(pos) {
+    /*
     debug("Enemy created at:" + pos);
     //var enemySpeed = [-50, -10];
     var enemySpeed = 50;
@@ -78,6 +81,10 @@ function createEnemy(pos) {
                                       [80, 39], 6, [0, 1, 2, 3, 2, 1]),
                                       enemy_update_func
             );
+    */
+    var enemy = new Enemy(pos);
+    entityPool.push(enemy.ship.entity);
+    return enemy;
 }
 function createBullet(pos) {
     var bullet_update_func = function(dt, entity) {
@@ -161,6 +168,7 @@ function createPlayer() {
             return new_pos;
         }
     );
+    entityPool.push(playerEntity);
     playerShip = new Ship(playerEntity);
     playerShip.addWeaponAtIndex(new MachineGun(), 0);
     playerShip.addWeaponAtIndex(new MachineGun(), 1);
@@ -212,7 +220,8 @@ function once(fn) {
 }
 
 var createAndAddEnemy = function() {
-    enemies.push(createEnemy([canvas.width, Math.random() * (canvas.height - 39)]));
+    var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)]);
+    enemies.push(enemy);
 }
 //createAndAddEnemy = once(createAndAddEnemy);
 
@@ -253,7 +262,7 @@ function updateEntities(dt) {
     // Update enemies
     for(var i = 0; i < enemies.length; i++) {
         //Remove if offscreen
-        if(!enemies[i].update(dt)) {
+        if(!enemies[i].ship.entity.update(dt)) {
             enemies.splice(i, 1);
             i--;
         }
@@ -337,24 +346,39 @@ function checkCollisions() {
         for(var j = 0; j < bullets.length; j++) {
             var bullet = bullets[j];
 
-            var collisionPoint = bulletCollides(bullet, enemy);
+            var collisionPoint = bulletCollides(bullet, enemy.ship.entity);
             if(collisionPoint) {
                 if(bullet.hasOwnProperty('hit_function')) {
-                    bullet.hit_function(collisionPoint, enemy);
+                    bullet.hit_function(collisionPoint, enemy.ship.entity);
                 }
-                enemies.splice(i, 1);
-                i--;
+                else if(bullet.hasOwnProperty('weapon')) {
+                    var destroyed = enemy.ship.damage(bullet.weapon.damage);
+                    if(destroyed) {
+                        enemy.ship.entity.remove = true;
+                        enemies.splice(i, 1);
+                        i--;
 
-                score += 100;
+                        score += 100;
 
-                //createExplosion(collisionPoint);
+                    }
+                    bullet.remove = true;
+                    bullets.splice(j, 1);
+                    break;
+                } else {
+                    enemies.splice(i, 1);
+                    i--;
 
-                bullets.splice(j, 1);
+                    score += 100;
+
+                    //createExplosion(collisionPoint);
+
+                    bullets.splice(j, 1);
+                }
                 break;
             }
         }
 
-        if(entityCollides(enemy, playerEntity)) {
+        if(entityCollides(enemy.ship.entity, playerEntity)) {
             gameOver();
         }
     }
@@ -381,6 +405,12 @@ function render() {
     ctx.fillStyle = terrainPattern;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    entityPool = entityPool.filter(function(entity) {
+        return !entity.remove && !entity.sprite.done;
+    });
+    renderEntities(entityPool);
+
+    /*
     // Render the player if the game isn't over
     if(!isGameOver) {
         renderEntity(playerEntity);
@@ -389,6 +419,7 @@ function render() {
     renderEntities(bullets);
     renderEntities(enemies);
     renderEntities(explosions);
+    */
 }
 
 function renderEntities(entities) {
