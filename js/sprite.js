@@ -38,3 +38,18 @@ Sprite.prototype.render = function(ctx) {
                   0, 0,
                   this.size[0], this.size[1]);
 };
+
+function RepeatedSprite(url, size, repeat_type) {
+    this.url = url;
+    this.size = size;
+    this.repeat_type = repeat_type;
+    this.done = false;
+}
+RepeatedSprite.prototype.update = function() {
+    this.done = true;
+};
+RepeatedSprite.prototype.render = function(ctx) {
+    var laser_pattern = ctx.createPattern(resources.get(this.url), this.repeat_type);
+    ctx.fillStyle = laser_pattern;
+    ctx.fillRect(0, 0, this.size[0], this.size[1]);
+};

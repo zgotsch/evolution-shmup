@@ -23,7 +23,8 @@ function gameLoop() {
 resources.onReady(init);
 resources.load([
         'resources/sprites.png',
-        'resources/terrain.png'
+        'resources/terrain.png',
+        'resources/laser.png'
         ]);
 
 function init() {
@@ -88,6 +89,28 @@ function createFastBullet(pos) {
     return new Entity(pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
             bullet_update_func);
 }
+function createLaser(start_pos, end_pos) {
+    var bullet_update_func = function(dt, entity) {
+        return add2d(entity.pos, mul2d([100000, 0], dt));
+    };
+    var hit_func = function(hit_location, hit_entity) {
+        //make an explosion
+        createExplosion(hit_location);
+        //hit_entity.damage(100);
+
+        //draw a laser
+        explosions.push({
+            pos: start_pos,
+            sprite: new RepeatedSprite('resources/laser.png',
+                [hit_location[0] - start_pos[0], 6], 'repeat')
+        });
+    };
+
+    var laser = new Entity(start_pos, new Sprite('resources/sprites.png', [0, 39], [18, 8]),
+            bullet_update_func);
+    laser.hit_function = hit_func;
+    return laser;
+}
 
 var up = {};
 var down = {};
@@ -131,9 +154,9 @@ function createPlayer() {
             if(input.isDown('SPACE') && !isGameOver && Date.now() - lastFire > FIRE_DELAY) {
                 bullet_position = getEntityCenter(player);
 
-                //bullets.push(createMissile(up, bullet_position));
-                //bullets.push(createMissile(down, bullet_position));
-                bullets.push(createFastBullet(bullet_position));
+                bullets.push(createMissile(up, bullet_position));
+                bullets.push(createMissile(down, bullet_position));
+                bullets.push(createLaser(bullet_position));
 
                 lastFire = Date.now();
             }
@@ -252,6 +275,16 @@ function entityCollides(e1, e2) {
     return boxCollides(e1.pos, e1.sprite.size, e2.pos, e2.sprite.size);
 }
 
+function createExplosion(pos) {
+    explosions.push({
+        pos: pos,
+        sprite: new Sprite('resources/sprites.png',
+                           [0, 117], [39, 39], 16,
+                           [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                           null, true)
+    });
+}
+
 function checkCollisions() {
     enforcePlayerBounds();
 
@@ -263,18 +296,15 @@ function checkCollisions() {
 
             var collisionPoint = bulletCollides(bullet, enemy);
             if(collisionPoint) {
+                if(bullet.hasOwnProperty('hit_function')) {
+                    bullet.hit_function(collisionPoint, enemy);
+                }
                 enemies.splice(i, 1);
                 i--;
 
                 score += 100;
 
-                explosions.push({
-                    pos: collisionPoint,
-                    sprite: new Sprite('resources/sprites.png',
-                                       [0, 117], [39, 39], 16,
-                                       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                                       null, true)
-                });
+                //createExplosion(collisionPoint);
 
                 bullets.splice(j, 1);
                 break;
