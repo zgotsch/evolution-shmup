@@ -1,6 +1,6 @@
 function getEntityCenter(entity) {
-    return [entity.pos[0] + entity.sprite.size[0] / 2,
-            entity.pos[1] + entity.sprite.size[1] / 2];
+    return [entity.pos[0] + entity.sprites[0].size[0] / 2,
+            entity.pos[1] + entity.sprites[0].size[1] / 2];
 }
 
 function isEntityOffscreen(entity) {
@@ -8,12 +8,12 @@ function isEntityOffscreen(entity) {
            entity.pos[0] < 0 || entity.pos[0] > canvas.width;
 }
 
-function Entity(pos, sprite, update_function) {
+function Entity(pos, sprites, update_function) {
     this.pos = pos;
     this.old_pos = pos;
     this.velocity = null;
 
-    this.sprite = sprite;
+    this.sprites = sprites;
 
     this.update_function = update_function;
     this.state = {};
@@ -30,6 +30,16 @@ Entity.prototype.update = function(dt) {
     this.pos = this.update_function(dt, this);
     this.velocity = mul2d(sub2d(this.pos, this.old_pos), 1/dt);
 
-    this.sprite.update(dt);
+    this.sprites.forEach(function(sprite) {
+        sprite.update(dt);
+    });
     return true;
+};
+Entity.prototype.render = function(ctx) {
+    ctx.save();
+    ctx.translate(this.pos[0], this.pos[1]);
+    this.sprites.forEach(function(sprite) {
+        sprite.render(ctx);
+    });
+    ctx.restore();
 };

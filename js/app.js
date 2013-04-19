@@ -188,7 +188,7 @@ function Engine() {
         var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)])
         self.enemies.push(enemy);
     }
-    //createAndAddEnemy = once(createAndAddEnemy);
+    createAndAddEnemy = once(createAndAddEnemy);
 }
 
 function Renderer(canvas, ctx) {
@@ -196,25 +196,22 @@ function Renderer(canvas, ctx) {
 
     function removeInactiveEntities() {
         entities = entities.filter(function(e) {
-            return !e.remove && !e.sprite.done;
+            return !e.remove && !e.sprites[0].done;
         });
     }
 
     function updateSprites(dt) {
-        entities.forEach(function (entity) {
-            entity.sprite.update(dt);
+        entities.forEach(function(entity) {
+            entity.sprites.forEach(function(sprite) {
+                sprite.update(dt);
+            });
         });
     }
 
     function renderEntities(entities) {
-        entities.forEach(renderEntity);
-    }
-
-    function renderEntity(entity) {
-        ctx.save();
-        ctx.translate(entity.pos[0], entity.pos[1]);
-        entity.sprite.render(ctx);
-        ctx.restore();
+        entities.forEach(function(entity) {
+            entity.render(ctx);
+        });
     }
 
     function renderBackground() {
@@ -322,8 +319,8 @@ function createMissile(direction, pos) {
 
 function createPlayer(pos, renderer) {
     var playerShip;
-    playerEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 0],
-                                         [39, 39], 16, [0, 1]));
+    playerEntity = new Entity(pos, [new Sprite('resources/sprites.png', [0, 0],
+                                         [39, 39], 16, [0, 1])]);
 
     renderer.addEntity(playerEntity);
     playerShip = new Ship(playerEntity, 100, [], {speed: 200});
@@ -377,10 +374,10 @@ function updateEntities(dt) {
 
     // Update explosions
     for(var i = 0; i < explosions.length; i++) {
-        explosions[i].sprite.update(dt);
+        explosions[i].sprites[0].update(dt);
 
         // Remove if animation is done
-        if(explosions[i].sprite.done) {
+        if(explosions[i].sprites[0].done) {
             explosions.splice(i, 1);
             i--;
         }
@@ -389,12 +386,12 @@ function updateEntities(dt) {
 
 function entityBorders(entity) {
     var borders = [];
-    borders.push([entity.pos, add2d(entity.pos, [entity.sprite.size[0], 0])]); //top
-    borders.push([entity.pos, add2d(entity.pos, [0, entity.sprite.size[1]])]); //left
-    borders.push([add2d(entity.pos, [entity.sprite.size[0], 0]),
-                  add2d(entity.pos, entity.sprite.size)]); //right
-    borders.push([add2d(entity.pos, [0, entity.sprite.size[1]]),
-                  add2d(entity.pos, entity.sprite.size)]); //bottom
+    borders.push([entity.pos, add2d(entity.pos, [entity.sprites[0].size[0], 0])]); //top
+    borders.push([entity.pos, add2d(entity.pos, [0, entity.sprites[0].size[1]])]); //left
+    borders.push([add2d(entity.pos, [entity.sprites[0].size[0], 0]),
+                  add2d(entity.pos, entity.sprites[0].size)]); //right
+    borders.push([add2d(entity.pos, [0, entity.sprites[0].size[1]]),
+                  add2d(entity.pos, entity.sprites[0].size)]); //bottom
     return borders;
 }
 function bulletCollides(bullet, other) {
@@ -435,7 +432,7 @@ function boxCollides(pos, size, pos2, size2) {
 }
 
 function entityCollides(e1, e2) {
-    return boxCollides(e1.pos, e1.sprite.size, e2.pos, e2.sprite.size);
+    return boxCollides(e1.pos, e1.sprites[0].size, e2.pos, e2.sprites[0].size);
 }
 
 function createExplosion(pos) {
@@ -456,13 +453,13 @@ function enforcePlayerBounds() {
 function boundEntityWithin(entity, bounds_low, bounds_high) {
     if(entity.pos[0] < bounds_low[0]) {
         entity.pos[0] = bounds_low[0];
-    } else if(entity.pos[0] + entity.sprite.size[0] > bounds_high[0]) {
-        entity.pos[0] = bounds_high[0] - entity.sprite.size[0];
+    } else if(entity.pos[0] + entity.sprites[0].size[0] > bounds_high[0]) {
+        entity.pos[0] = bounds_high[0] - entity.sprites[0].size[0];
     }
     if(entity.pos[1] < bounds_low[1]) {
         entity.pos[1] = bounds_low[1];
-    } else if(entity.pos[1] + entity.sprite.size[1] > bounds_high[1]) {
-        entity.pos[1] = bounds_high[1] - entity.sprite.size[1];
+    } else if(entity.pos[1] + entity.sprites[0].size[1] > bounds_high[1]) {
+        entity.pos[1] = bounds_high[1] - entity.sprites[0].size[1];
     }
 }
 

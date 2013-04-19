@@ -59,8 +59,8 @@ function followPlayerBehaviour(ship) {
     return {speed: enemySpeed, direction: direction_to_player};
 }
 function Enemy(pos, behaviour) {
-    var shipEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 78],
-                                [80, 39], 6, [0, 1, 2, 3, 2, 1]));
+    var shipEntity = new Entity(pos, [new Sprite('resources/sprites.png', [0, 78],
+                                [80, 39], 6, [0, 1, 2, 3, 2, 1])]);
     this.ship = new Ship(shipEntity, 200, [{type:'physical', amount:10}], {speed: 50});
     this.behaviour = behaviour;
 
@@ -71,13 +71,10 @@ Enemy.prototype.update = function(dt) {
 };
 
 function tempCreateExplosion(pos) {
-    var explosion = {
-        pos: pos,
-        sprite: new Sprite('resources/sprites.png',
+    var explosion = new Entity(pos, [new Sprite('resources/sprites.png',
                            [0, 117], [39, 39], 16,
                            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                           null, true)
-    };
+                           null, true)]);
     engine.renderer.addEntity(explosion);
     //engine.explosions.push(explosion);
 }
@@ -149,7 +146,7 @@ function Projectile(pos, sprite, updateFunction, weapon) {
     this.updateFunction = updateFunction;
     this.weapon = weapon;
 
-    this.entity = new Entity(pos, sprite);
+    this.entity = new Entity(pos, [sprite]);
     engine.playerBullets.push(this);
     engine.renderer.addEntity(this.entity);
 }
