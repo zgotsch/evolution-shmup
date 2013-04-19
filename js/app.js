@@ -9,6 +9,36 @@ document.body.appendChild(canvas);
 var scoreEl = document.getElementById('score');
 var framerateEl = document.getElementById('framerate');
 
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+
+// requestAnimationFrame polyfill by Erik Möller
+// fixes from Paul Irish and Tino Zijdel
+
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
 
 var terrainPattern;
 document.getElementById('play-again').addEventListener('click', function() {
@@ -43,7 +73,7 @@ function Engine() {
 
     this.renderer = new Renderer(canvas, ctx);
 
-    var framerate = DEBUG;
+    var framerate = true;
 
     var lastTime;
 
@@ -132,17 +162,19 @@ function Engine() {
                     }
                     var destroyed = enemy.ship.damage(bullet.weapon.damage);
 
+                    bullet.entity.remove = true;
+                    self.playerBullets.splice(j, 1);
+                    j--;
+
                     if(destroyed) {
+                        self.score += 100;
+
                         enemy.ship.entity.remove = true;
                         self.enemies.splice(i, 1);
                         i--;
 
-                        self.score += 100;
-
+                        break;
                     }
-                    bullet.entity.remove = true;
-                    self.playerBullets.splice(j, 1);
-                    break;
                 }
             }
 
@@ -294,7 +326,7 @@ function createPlayer(pos, renderer) {
                                          [39, 39], 16, [0, 1]));
 
     renderer.addEntity(playerEntity);
-    playerShip = new Ship(playerEntity);
+    playerShip = new Ship(playerEntity, 100, [], {speed: 200});
     playerShip.addWeaponAtIndex(new MachineGun(), 0);
     playerShip.addWeaponAtIndex(new MachineGun(), 1);
 
@@ -366,6 +398,10 @@ function entityBorders(entity) {
     return borders;
 }
 function bulletCollides(bullet, other) {
+    if(entityCollides(bullet.entity, other)) {
+        return bullet.entity.pos;
+    }
+
     // returns collision point or false
     var bulletSegment = [bullet.entity.old_pos, bullet.entity.pos];
     var closest = {point:null, distance:Infinity}

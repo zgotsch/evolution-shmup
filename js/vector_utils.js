@@ -5,6 +5,11 @@ function normalize(v) {
     vmag = magnitude(v);
     return [v[0] / vmag, v[1] / vmag];
 }
+
+function scaleVectorTo(v, s) {
+    return mul2d(normalize(v), s);
+}
+
 function add2d(v1, v2) {
     return [v1[0] + v2[0], v1[1] + v2[1]];
 }

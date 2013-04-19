@@ -1,7 +1,9 @@
-function Ship(entity, health) {
+function Ship(entity, health, armor, engine) {
     this.entity = entity;
     this.health = health;
     this.weapons = {};
+    this.armor = armor;
+    this.engine = engine;
 }
 Ship.prototype.addWeaponAtIndex = function(weapon, index) {
     if(!(index in weapon)) {
@@ -20,7 +22,21 @@ Ship.prototype.fireAllWeapons = function() {
         this.weapons[gun].fire();
     }
 };
+Ship.prototype.applyArmorToDamage = function(damage) {
+    var adjustedDamage = clone(damage);
+    for(var i = 0; i < this.armor.length; i++) {
+        var armor = this.armor[i];
+        if(armor.type === 'all') {
+            ;
+        }
+        if(damage.type === armor.type) {
+            adjustedDamage.amount = Math.max(0, damage.amount - armor.amount);
+        }
+    }
+    return adjustedDamage;
+};
 Ship.prototype.damage = function(damage) {
+    damage = this.applyArmorToDamage(damage);
     this.health -= damage.amount;
     if(this.health <= 0) {
         tempCreateExplosion(getEntityCenter(this.entity));
@@ -29,25 +45,29 @@ Ship.prototype.damage = function(damage) {
         return false;
     }
 };
+Ship.prototype.move = function(intent, dt) {
+    //intent is a direction and a speed
+    var speed = Math.min(intent.speed, this.engine.speed);
+    this.entity.pos = add2d(this.entity.pos, scaleVectorTo(intent.direction, speed * dt));
+};
 
-function goStraightBehaviour(dt, ship) {
-    ship.entity.pos = add2d(ship.entity.pos, [-enemySpeed * dt, 0]);
+function goStraightBehaviour(ship) {
+    return {speed: enemySpeed, direction: [-1, 0]};
 }
-function followPlayerBehaviour(dt, ship) {
+function followPlayerBehaviour(ship) {
     var direction_to_player = normalize(sub2d(engine.player.ship.entity.pos, ship.entity.pos));
-    new_pos = add2d(ship.entity.pos, mul2d(direction_to_player, enemySpeed * dt));
-    ship.entity.pos = new_pos;
+    return {speed: enemySpeed, direction: direction_to_player};
 }
 function Enemy(pos, behaviour) {
     var shipEntity = new Entity(pos, new Sprite('resources/sprites.png', [0, 78],
                                 [80, 39], 6, [0, 1, 2, 3, 2, 1]));
-    this.ship = new Ship(shipEntity, 200);
+    this.ship = new Ship(shipEntity, 200, [{type:'physical', amount:10}], {speed: 50});
     this.behaviour = behaviour;
 
     debug("Enemy created at:" + pos);
 }
 Enemy.prototype.update = function(dt) {
-    this.behaviour(dt, this.ship);
+    this.ship.move(this.behaviour(this.ship), dt);
 };
 
 function tempCreateExplosion(pos) {
