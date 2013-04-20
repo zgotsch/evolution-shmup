@@ -228,6 +228,9 @@ function Renderer(canvas, ctx) {
     }
 
     this.addEntity = function(entity) {
+        if(!(entity instanceof Entity)) {
+            debugger;
+        }
         entities.push(entity);
     }
 
@@ -319,8 +322,13 @@ function createMissile(direction, pos) {
 
 function createPlayer(pos, renderer) {
     var playerShip;
-    playerEntity = new Entity(pos, [new Sprite('resources/sprites.png', [0, 0],
-                                         [39, 39], 16, [0, 1])]);
+    playerEntity = new Entity(pos, [new Sprite({
+        url: 'resources/sprites.png',
+        pos: [0, 0],
+        size: [39, 39],
+        speed: 16,
+        frames: [0, 1]
+    })]);
 
     renderer.addEntity(playerEntity);
     playerShip = new Ship(playerEntity, 100, [], {speed: 200});

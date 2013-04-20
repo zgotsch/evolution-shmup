@@ -59,8 +59,13 @@ function followPlayerBehaviour(ship) {
     return {speed: enemySpeed, direction: direction_to_player};
 }
 function Enemy(pos, behaviour) {
-    var shipEntity = new Entity(pos, [new Sprite('resources/sprites.png', [0, 78],
-                                [80, 39], 6, [0, 1, 2, 3, 2, 1])]);
+    var shipEntity = new Entity(pos, [new Sprite({
+        url: 'resources/sprites.png',
+        pos: [0, 78],
+        size: [80, 39],
+        speed: 6,
+        frames: [0, 1, 2, 3, 2, 1]
+    })]);
     this.ship = new Ship(shipEntity, 200, [{type:'physical', amount:10}], {speed: 50});
     this.behaviour = behaviour;
 
@@ -71,12 +76,16 @@ Enemy.prototype.update = function(dt) {
 };
 
 function tempCreateExplosion(pos) {
-    var explosion = new Entity(pos, [new Sprite('resources/sprites.png',
-                           [0, 117], [39, 39], 16,
-                           [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                           null, true)]);
+    var explosion = new Entity(pos, [new Sprite({
+        url: 'resources/sprites.png',
+        pos: [0, 117],
+        size: [39, 39],
+        speed: 16,
+        frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        once: true
+    })]);
+
     engine.renderer.addEntity(explosion);
-    //engine.explosions.push(explosion);
 }
 
 
@@ -134,7 +143,11 @@ var machineGunProjectileHitFunction = function(hitLocation) {
 function MachineGun() {
     Weapon.call(this, "MachineGun", {amount: 100, type: "physical"}, 100);
 
-    this.projectileSprite = new Sprite('resources/sprites.png', [0, 39], [18, 8]);
+    this.projectileSprite = new Sprite({
+        url: 'resources/sprites.png',
+        pos: [0, 39],
+        size: [18, 8]
+    });
     this.projectileUpdateFunction = machineGunProjectileUpdateFunction;
     this.projectileExplosionFunction = machineGunProjectileHitFunction;
 }

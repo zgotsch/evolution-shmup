@@ -1,17 +1,24 @@
-function Sprite(url, pos, size, speed, frames, dir, once) {
-    this.pos = pos;
-    this.size = size;
-    this.speed = typeof speed === 'number' ? speed : 0;
-    this.frames = frames;
+function Sprite(params) { //url, pos, size, speed, frames, dir, once) {
+    var defaults = {
+        speed: 0,
+        dir: 'horizontal',
+        once: false
+    };
+    params = extend({}, defaults, params);
+
+    this.pos = params.pos;
+    this.size = params.size;
+    this.speed = params.speed;
+    this.frames = params.frames;
+    this.url = params.url;
+    this.dir = params.dir;
+    this.once = params.once;
+
     this._index = 0;
-    this.url = url;
-    this.dir = dir || 'horizontal';
-    this.once = once;
 }
 Sprite.prototype.update = function(dt) {
     this._index += this.speed * dt;
 };
-
 Sprite.prototype.render = function(ctx) {
     var frame;
 
