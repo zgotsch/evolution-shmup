@@ -62,6 +62,7 @@ resources.onReady(function() {
 });
 resources.load([
         'resources/sprites.png',
+        'resources/placehold.png',
         'resources/terrain.png',
         'resources/laser.png'
         ]);
@@ -244,21 +245,6 @@ var bulletSpeed = 500;
 var enemySpeed = 50;
 
 function createEnemy(pos) {
-    /*
-    debug("Enemy created at:" + pos);
-    //var enemySpeed = [-50, -10];
-    var enemySpeed = 50;
-    var enemy_update_func = function(dt, entity) {
-        //new_pos = add2d(old_pos, mul2d(enemySpeed, dt));
-        direction_to_player = normalize(sub2d(playerEntity.pos, entity.pos));
-        new_pos = add2d(entity.pos, mul2d(direction_to_player, enemySpeed * dt));
-        return new_pos;
-    }
-    return new Entity(pos, new Sprite('resources/sprites.png', [0, 78],
-                                      [80, 39], 6, [0, 1, 2, 3, 2, 1]),
-                                      enemy_update_func
-            );
-    */
     var behaviour = randomInt(1) ? goStraightBehaviour : followPlayerBehaviour;
     var enemy = new Enemy(pos, behaviour);
     engine.renderer.addEntity(enemy.ship.entity);
@@ -322,17 +308,8 @@ function createMissile(direction, pos) {
 }
 
 function createPlayer(pos, renderer) {
-    var playerShip;
-    playerEntity = new Entity(pos, [new Sprite({
-        url: 'resources/sprites.png',
-        pos: [0, 0],
-        size: [39, 39],
-        speed: 16,
-        frames: [0, 1]
-    })]);
-
-    renderer.addEntity(playerEntity);
-    playerShip = new Ship(playerEntity, 100, [], {speed: 200});
+    playerShip = new Ship(shipTypes.player, pos, 100, [], {speed: 200});
+    renderer.addEntity(playerShip.entity);
     playerShip.addWeaponAtIndex(new MachineGun(), 0);
     playerShip.addWeaponAtIndex(new MachineGun(), 1);
 
@@ -359,39 +336,6 @@ function createPlayer(pos, renderer) {
     }};
 }
 
-
-
-function updateEntities(dt) {
-    playerEntity.update(dt);
-
-    // Update bullets
-    for(var i = 0; i < bullets.length; i++) {
-        if(!bullets[i].update(dt)) {
-            bullets.splice(i, 1);
-            i--;
-        }
-    }
-
-    // Update enemies
-    for(var i = 0; i < enemies.length; i++) {
-        //Remove if offscreen
-        if(!enemies[i].ship.entity.update(dt)) {
-            enemies.splice(i, 1);
-            i--;
-        }
-    }
-
-    // Update explosions
-    for(var i = 0; i < explosions.length; i++) {
-        explosions[i].sprites[0].update(dt);
-
-        // Remove if animation is done
-        if(explosions[i].sprites[0].done) {
-            explosions.splice(i, 1);
-            i--;
-        }
-    }
-}
 
 function entityBorders(entity) {
     var borders = [];
@@ -444,19 +388,8 @@ function entityCollides(e1, e2) {
     return boxCollides(e1.pos, e1.sprites[0].size, e2.pos, e2.sprites[0].size);
 }
 
-function createExplosion(pos) {
-    explosions.push({
-        pos: pos,
-        sprite: new Sprite('resources/sprites.png',
-                           [0, 117], [39, 39], 16,
-                           [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                           null, true)
-    });
-}
-
-
 function enforcePlayerBounds() {
-    boundEntityWithin(playerEntity, [0, 0], [canvas.width, canvas.height]);
+    boundEntityWithin(playerShip.entity, [0, 0], [canvas.width, canvas.height]);
 }
 
 function boundEntityWithin(entity, bounds_low, bounds_high) {

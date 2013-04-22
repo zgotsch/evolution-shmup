@@ -1,9 +1,59 @@
-function Ship(entity, health, armor, engine) {
-    this.entity = entity;
+var shipTypes = {
+    player: 0,
+    enemySmall: 1,
+    enemyMedium: 2,
+    enemyLarge: 3
+};
+
+function shipTypeToSprite(shipType) {
+    if(shipType === shipTypes.enemySmall) {
+        return new Sprite({
+            url: 'resources/placehold.png',
+            pos: [0, 45],
+            size: [40, 25],
+        });
+    } else if(shipType === shipTypes.enemyMedium) {
+        return new Sprite({
+            url: 'resources/placehold.png',
+            pos: [0, 70],
+            size: [60, 40],
+        });
+    } else if(shipType === shipTypes.enemyLarge) {
+        return new Sprite({
+            url: 'resources/placehold.png',
+            pos: [0, 110],
+            size: [90, 45],
+        });
+    } else if(shipType === shipTypes.player) {
+        return new Sprite({
+            url: 'resources/placehold.png',
+            pos: [0, 0],
+            size: [40, 45],
+            frames: [0, 1]
+        });
+    }
+}
+
+function Ship(type, pos, health, armor, engine) {
+    this.type = type;
+    this.entity = new Entity(pos, null);
     this.health = health;
     this.weapons = {};
     this.armor = armor;
     this.engine = engine;
+
+    this.entity.sprites = createShipSprites.call(this);
+
+    function createShipSprites() {
+        var shipSprites = []
+        shipSprites.push(shipTypeToSprite(type)); //hull
+        shipSprites.push(new Sprite({
+            url: 'resources/placehold.png',
+            pos: [0, 0],
+            size: [10, 10],
+        }));
+        return shipSprites;
+    }
 }
 Ship.prototype.addWeaponAtIndex = function(weapon, index) {
     if(!(index in weapon)) {
@@ -59,14 +109,15 @@ function followPlayerBehaviour(ship) {
     return {speed: enemySpeed, direction: direction_to_player};
 }
 function Enemy(pos, behaviour) {
-    var shipEntity = new Entity(pos, [new Sprite({
-        url: 'resources/sprites.png',
-        pos: [0, 78],
-        size: [80, 39],
-        speed: 6,
-        frames: [0, 1, 2, 3, 2, 1]
-    })]);
-    this.ship = new Ship(shipEntity, 200, [{type:'physical', amount:10}], {speed: 50});
+   // var shipEntity = new Entity(pos, [new Sprite({
+   //     url: 'resources/placehold.png',
+   //     pos: [0, 70],
+   //     size: [60, 40],
+   //     //speed: 6,
+   //     frames: [0, 1, 2, 3, 2, 1]
+   // })]);
+    var type = randomInt(1, 3);
+    this.ship = new Ship(type, pos, 200, [{type:'physical', amount:10}], {speed: 50});
     this.behaviour = behaviour;
 
     debug("Enemy created at:" + pos);
@@ -77,11 +128,11 @@ Enemy.prototype.update = function(dt) {
 
 function tempCreateExplosion(pos) {
     var explosion = new Entity(pos, [new Sprite({
-        url: 'resources/sprites.png',
-        pos: [0, 117],
-        size: [39, 39],
+        url: 'resources/placehold.png',
+        pos: [0, 155],
+        size: [20, 20],
         speed: 16,
-        frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        frames: [0, 1, 0],
         once: true
     })]);
 
@@ -144,9 +195,9 @@ function MachineGun() {
     Weapon.call(this, "MachineGun", {amount: 100, type: "physical"}, 100);
 
     this.projectileSprite = new Sprite({
-        url: 'resources/sprites.png',
-        pos: [0, 39],
-        size: [18, 8]
+        url: 'resources/placehold.png',
+        pos: [0, 176],
+        size: [5, 10]
     });
     this.projectileUpdateFunction = machineGunProjectileUpdateFunction;
     this.projectileExplosionFunction = machineGunProjectileHitFunction;
