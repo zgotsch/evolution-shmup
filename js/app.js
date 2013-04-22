@@ -3,7 +3,7 @@ var DEBUG = true;
 var canvas = document.createElement("canvas");
 var ctx = canvas.getContext("2d");
 canvas.width = 512;
-canvas.height = 480;
+canvas.height = 760;
 document.body.appendChild(canvas);
 
 var scoreEl = document.getElementById('score');
@@ -85,7 +85,7 @@ function Engine() {
         self.score = 0;
 
         self.enemies = [];
-        self.player = createPlayer([50, canvas.height / 2], this.renderer);
+        self.player = createPlayer([canvas.width / 2, canvas.height - 50], this.renderer);
         self.playerBullets = [];
         self.enemyBullets = [];
     }
@@ -185,10 +185,11 @@ function Engine() {
     }
 
     var createAndAddEnemy = function() {
-        var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)])
+        var enemy = createEnemy([Math.random() * canvas.width, 0]);
+        //var enemy = createEnemy([canvas.width, Math.random() * (canvas.height - 39)])
         self.enemies.push(enemy);
     }
-    createAndAddEnemy = once(createAndAddEnemy);
+    //createAndAddEnemy = once(createAndAddEnemy);
 }
 
 function Renderer(canvas, ctx) {

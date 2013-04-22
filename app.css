@@ -6,7 +6,7 @@ html, body {
 
 canvas {
     display: block;
-    margin: auto;
+    margin: auto 0;
 
     position: absolute;
     top: 0;
@@ -16,25 +16,23 @@ canvas {
 }
 
 .wrapper {
-    width: 512px;
+    float: right;
+    width: 200px;
     margin: 0 auto;
     margin-top: 2em;
 }
 
 #instructions {
-    float: left;
     font-family: sans-serif;
     color: #757575;
 }
 
 #score {
-    float: right;
     color: white;
     font-size: 2em;
 }
 
 #framerate {
-    float: right;
     color: white;
     font-size: 2em;
     margin-right: 100px;
@@ -45,9 +43,9 @@ canvas {
 }
 
 #game-over, #game-over-overlay {
-    margin: auto;
+    margin: auto 0;
     width: 512px;
-    height: 480px;
+    height: 760px;
     position: absolute;
     top: 0;
     left: 0;

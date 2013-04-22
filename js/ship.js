@@ -52,7 +52,7 @@ Ship.prototype.move = function(intent, dt) {
 };
 
 function goStraightBehaviour(ship) {
-    return {speed: enemySpeed, direction: [-1, 0]};
+    return {speed: enemySpeed, direction: [0, 1]};
 }
 function followPlayerBehaviour(ship) {
     var direction_to_player = normalize(sub2d(engine.player.ship.entity.pos, ship.entity.pos));
@@ -89,12 +89,12 @@ function tempCreateExplosion(pos) {
 }
 
 
-function weaponIndexToYCoord(index) {
-    return 5 + index * 20;
+function weaponIndexToLaunchPosition(index) {
+    return [5 + index * 20, 0];
 }
 function weaponFireLocation(ship, index) {
     //var entityCenter = getEntityCenter(ship.entity);
-    return add2d(ship.entity.pos, [0, weaponIndexToYCoord(index)]);
+    return add2d(ship.entity.pos, weaponIndexToLaunchPosition(index));
 }
 
 function Weapon(name, damage, fireDelay) {
@@ -134,7 +134,7 @@ Weapon.prototype.attach = function(ship) {
 };
 
 var machineGunProjectileUpdateFunction = function(dt, entity) {
-    return add2d(entity.pos, mul2d([bulletSpeed, 0], dt));
+    return add2d(entity.pos, mul2d([0, -bulletSpeed], dt));
 }
 var machineGunProjectileHitFunction = function(hitLocation) {
     tempCreateExplosion(hitLocation);
