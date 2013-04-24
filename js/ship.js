@@ -33,6 +33,23 @@ function shipTypeToSprite(shipType) {
         });
     }
 }
+function armorToSprites(armors) {
+    return armors.map(function(armor) {
+        if(armor.type === 'physical') {
+            return new Sprite({
+                url: 'resources/placehold.png',
+                pos: [0, 190],
+                size: [40, 25],
+            });
+        } else {
+            return new Sprite({
+                url: 'resources/placehold.png',
+                pos: [40, 190],
+                size: [40, 25],
+            });
+        }
+    });
+}
 
 function Ship(type, pos, health, armor, engine) {
     this.type = type;
@@ -47,11 +64,15 @@ function Ship(type, pos, health, armor, engine) {
     function createShipSprites() {
         var shipSprites = []
         shipSprites.push(shipTypeToSprite(type)); //hull
-        shipSprites.push(new Sprite({
-            url: 'resources/placehold.png',
-            pos: [0, 0],
-            size: [10, 10],
-        }));
+        //shipSprites.push(new Sprite({
+        //    url: 'resources/placehold.png',
+        //    pos: [0, 0],
+        //    size: [10, 10],
+        //}));
+        var armorSprites = armorToSprites(armor);
+        armorSprites.forEach(function(sprite) {
+            shipSprites.push(sprite);
+        });
         return shipSprites;
     }
 }

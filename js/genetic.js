@@ -46,9 +46,9 @@ function getNewChromosome() {
     if(chromosome_pool.length == 0) {
         if(dead_chromosomes.length != 0) {
             // we make a new generation
-            //     For 10, take top 3, do crossover between them to get 6.
+            //     For 10, take top 4, do crossover between them to get 6.
             //     Then make 4 more randomly
-            crossover_count = 3;
+            crossover_count = 4;
             crossover_list = [];
             for(var i = 0; i < crossover_count; i++) {
                 crossover_list.push(dead_chromosomes.max());

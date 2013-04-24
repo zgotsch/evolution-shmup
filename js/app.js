@@ -139,7 +139,8 @@ function Engine() {
 
         checkCollisions();
 
-        if(Math.random() < 1 - Math.pow(.993, self.gameTime)) {
+        //if(Math.random() < 1 - Math.pow(.993, self.gameTime)) {
+        if(Math.random() < 0.01) {
             createAndAddEnemy();
         }
 
