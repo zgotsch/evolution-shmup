@@ -129,7 +129,20 @@ function followPlayerBehaviour(ship) {
     var direction_to_player = normalize(sub2d(engine.player.ship.entity.pos, ship.entity.pos));
     return {speed: enemySpeed, direction: direction_to_player};
 }
-function Enemy(pos, behaviour) {
+
+function shipHealthForType(shipType) {
+    if(shipType === shipTypes.player) {
+        return 500;
+    } else if(shipType === shipTypes.enemySmall) {
+        return 100;
+    } else if(shipType === shipTypes.enemyMedium) {
+        return 200;
+    } else if(shipType === shipTypes.enemyLarge) {
+        return 600;
+    }
+}
+
+function Enemy(shipType, behaviour, armor) {
    // var shipEntity = new Entity(pos, [new Sprite({
    //     url: 'resources/placehold.png',
    //     pos: [0, 70],
@@ -137,11 +150,11 @@ function Enemy(pos, behaviour) {
    //     //speed: 6,
    //     frames: [0, 1, 2, 3, 2, 1]
    // })]);
-    var type = randomInt(1, 3);
-    this.ship = new Ship(type, pos, 200, [{type:'physical', amount:10}], {speed: 50});
+    armor = armor || [{type:'physical', amount:10}];
+    this.ship = new Ship(shipType, [0, 0], shipHealthForType(shipType), armor, {speed: 50});
     this.behaviour = behaviour;
 
-    debug("Enemy created at:" + pos);
+    debug("Enemy created: " + this);
 }
 Enemy.prototype.update = function(dt) {
     this.ship.move(this.behaviour(this.ship), dt);

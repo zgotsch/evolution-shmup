@@ -246,8 +246,10 @@ var bulletSpeed = 500;
 var enemySpeed = 50;
 
 function createEnemy(pos) {
-    var behaviour = randomInt(1) ? goStraightBehaviour : followPlayerBehaviour;
-    var enemy = new Enemy(pos, behaviour);
+    //var behaviour = randomInt(1) ? goStraightBehaviour : followPlayerBehaviour;
+    //var enemy = new Enemy(randomInt(1, 3), behaviour);
+    var enemy = createEnemyFromChromosome(getNewChromosome());
+    enemy.ship.entity.pos = pos;
     engine.renderer.addEntity(enemy.ship.entity);
     return enemy;
 }

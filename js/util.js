@@ -7,7 +7,7 @@ function randomInt(min, max) {
 }
 
 function randomIndex(list) {
-    return randomInt(list.length);
+    return randomInt(list.length - 1);
 }
 
 function average(list) {

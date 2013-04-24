@@ -32,19 +32,31 @@ function Chromosome(shipType, weapons, armor, behaviour) {
     this.behaviour = behaviour;
 }
 
-function createShipEntityFromChromosome(chromosome) {
-    return createEnemy([0, 0]);
+function createEnemyFromChromosome(chromosome) {
+    var newEnemy = new Enemy(chromosome.shipType, chromosome.behaviour, chromosome.armor);
+    chromosome.weapons.forEach(function(weapon, index) {
+        newEnemy.addWeaponAtIndex(weapon, index);
+    });
+    return newEnemy;
+}
+
+function createRandomChromosome() {
+    var randomType = randomInt(1, 3);
+    var randomWeapons = [];
+    var randomArmor = randomInt(1) ? [{type:'physical', amount:50}] : [];
+    var randomBehaviour = randomInt(1) ? goStraightBehaviour : followPlayerBehaviour;
+    return new Chromosome(randomType, randomWeapons, randomArmor, randomBehaviour);
 }
 
 var chromosome_count = 10;
 var chromosome_pool = [];
-var entities_to_entity_sets = {}
+var enemies_to_enemy_sets = {}
 var live_chromosomes = {}; // Entity sets to chromosomes?
-var dead_chromosomes = {}; // Priority queue. Priorities are fitnesses.
+var dead_chromosomes = Heap.makeMaxHeap(); // Priority queue. Priorities are fitnesses.
 function getNewChromosome() {
     // when we don't have any chromosomes left in the pool
-    if(chromosome_pool.length == 0) {
-        if(dead_chromosomes.length != 0) {
+    if(chromosome_pool.length === 0) {
+        if(dead_chromosomes.size() !== 0) {
             // we make a new generation
             //     For 10, take top 4, do crossover between them to get 6.
             //     Then make 4 more randomly
@@ -59,12 +71,13 @@ function getNewChromosome() {
                 }
             }
         }
-        for(var i = chromosome_pool.count; i < chromosome_count; i++) {
+        for(var i = chromosome_pool.length; i < chromosome_count; i++) {
             chromosome_pool.push(createRandomChromosome());
         }
     }
+    console.log(chromosome_pool);
     // pick a random chromosome in the chromosome_pool and remove it from pool
-    return chromosome_pool.splice(randomIndex(chromosome_pool), 1);
+    return chromosome_pool.splice(randomIndex(chromosome_pool), 1)[0];
 }
 
 function crossover(chromo1, chromo2) {
