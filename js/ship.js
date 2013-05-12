@@ -110,11 +110,14 @@ Ship.prototype.damage = function(damage) {
     damage = this.applyArmorToDamage(damage);
     this.health -= damage.amount;
     if(this.health <= 0) {
-        tempCreateExplosion(getEntityCenter(this.entity));
+        this.die();
         return true;
     } else {
         return false;
     }
+};
+Ship.prototype.die = function() {
+    tempCreateExplosion(getEntityCenter(this.entity));
 };
 Ship.prototype.move = function(intent, dt) {
     //intent is a direction and a speed
@@ -158,6 +161,20 @@ function Enemy(shipType, behaviour, armor) {
 }
 Enemy.prototype.update = function(dt) {
     this.ship.move(this.behaviour(this.ship), dt);
+};
+Enemy.prototype.damage = function(damage) {
+    var destroyed = this.ship.damage(damage);
+
+    var chromosome = null;
+    if(live_chromosomes.hasOwnProperty(this)) {
+        chromosome = live_chromosomes[this];
+        delete live_chromosomes[this];
+    }
+    if(chromosome) {
+        dead_chromosomes.push({chromosome: chromosome, fitness: scoreFitness(this)});
+    }
+
+    return destroyed;
 };
 
 function tempCreateExplosion(pos) {

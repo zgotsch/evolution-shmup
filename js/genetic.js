@@ -37,6 +37,7 @@ function createEnemyFromChromosome(chromosome) {
     chromosome.weapons.forEach(function(weapon, index) {
         newEnemy.addWeaponAtIndex(weapon, index);
     });
+    live_chromosomes[newEnemy] = chromosome;
     return newEnemy;
 }
 
@@ -48,11 +49,16 @@ function createRandomChromosome() {
     return new Chromosome(randomType, randomWeapons, randomArmor, randomBehaviour);
 }
 
+function scoreFitness(enemy) {
+    var lifeLength = Date.now() - enemy.creation_time;
+    return lifeLength;
+}
+
 var chromosome_count = 10;
 var chromosome_pool = [];
 var enemies_to_enemy_sets = {}
-var live_chromosomes = {}; // Entity sets to chromosomes?
-var dead_chromosomes = Heap.makeMaxHeap(); // Priority queue. Priorities are fitnesses.
+var live_chromosomes = {}; // Enemy sets to chromosomes?
+var dead_chromosomes = Heap.makeMaxHeap([], function(x) { return x.fitness; }); // Priority queue. Priorities are fitnesses.
 function getNewChromosome() {
     // when we don't have any chromosomes left in the pool
     if(chromosome_pool.length === 0) {
@@ -60,10 +66,10 @@ function getNewChromosome() {
             // we make a new generation
             //     For 10, take top 4, do crossover between them to get 6.
             //     Then make 4 more randomly
-            crossover_count = 4;
-            crossover_list = [];
+            var crossover_count = 4;
+            var crossover_list = [];
             for(var i = 0; i < crossover_count; i++) {
-                crossover_list.push(dead_chromosomes.max());
+                crossover_list.push(dead_chromosomes.pop());
             }
             for(var i = 0; i < crossover_list.count; i++) {
                 for(var j = i; j < crossover_list.count; j++) {

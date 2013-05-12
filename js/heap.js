@@ -53,6 +53,7 @@
         }
 
         this.comparator = comparator;
+        this.scoreFunction = scoreFunction;
         this.heap = arr.slice(0);
 
         if(this.heap.length > 1) {
@@ -64,7 +65,7 @@
 
     Heap.prototype.pop = function() {
         var val = this.heap.shift();
-        heapify(this.heap, 0, this.comparator);
+        heapify(this.heap, 0, this.comparator, this.scoreFunction);
         return val;
     };
 
@@ -74,18 +75,18 @@
 
     Heap.prototype.push = function(val) {
         this.heap.push(val);
-        bubbleUp(this.heap, this.heap.length - 1, this.comparator);
+        bubbleUp(this.heap, this.heap.length - 1, this.comparator, this.scoreFunction);
     };
 
     Heap.prototype.size = function() {
         return this.heap.length;
     };
 
-    var makeMinHeap = function(arr) {
-        return new Heap(minComparator, arr);
+    var makeMinHeap = function(arr, scoreFunction) {
+        return new Heap(minComparator, arr, scoreFunction);
     };
-    var makeMaxHeap = function(arr) {
-        return new Heap(maxComparator, arr);
+    var makeMaxHeap = function(arr, scoreFunction) {
+        return new Heap(maxComparator, arr, scoreFunction);
     };
 
     window.Heap = {

@@ -162,7 +162,7 @@ function Engine() {
                     if(bullet.weapon.projectileExplosionFunction) {
                         bullet.weapon.projectileExplosionFunction(collisionPoint);
                     }
-                    var destroyed = enemy.ship.damage(bullet.weapon.damage);
+                    var destroyed = enemy.damage(bullet.weapon.damage);
 
                     bullet.entity.remove = true;
                     self.playerBullets.splice(j, 1);
